@@ -2,6 +2,12 @@ module Oware.Tests
 open NUnit.Framework
 open FsUnit
 
+let charOf = function
+    | 1 -> 'A' | 2 -> 'B' | 3 -> 'C' | 4 -> 'D' | 5 -> 'E' | 6 -> 'F'
+    | 7 -> 'a' | 8 -> 'b' | 9 -> 'c' | 10 -> 'd' | 11 -> 'e' | 12 -> 'f'
+
+let makeString = List.map (charOf >> string) >> String.concat ""
+
 let hasSeedCount (a,b,c,d,e,f,a',b',c',d',e',f') v =
     getSeeds 1 v |> should equal a
     getSeeds 2 v |> should equal b
@@ -106,6 +112,13 @@ let ``The player turns alternate`` () =
     gameState takenturn |> should equal "North's turn"
 
 [<Test>]
+let ``A player cannot manipulate their opponent's houses`` () =
+    let game = start South in
+        useHouse 10 game |> should equal game
+    let game = start North in
+        useHouse 1 game |> should equal game
+
+[<Test>]
 let ``You cannot sow from an empty house`` () =
     let game = playGame [4; 11; 4]
     game |> hasSeedCount (5, 5, 5, 0, 5, 5, 5, 5, 4, 4, 0, 5)
@@ -151,4 +164,30 @@ let ``The side with 25 or more seeds wins`` () =
     game |> hasSeedCount (1, 0, 0, 1, 0, 1, 1, 3, 10, 0, 1, 2)
     score game |> should equal (0, 28)
     gameState game |> should equal "North won"
-// tests for: winning, losing, draw
+
+[<Test>]
+let ``Must play to give opponent pieces, if they have none`` () =
+    let game = playGame [6; 8; 5; 9; 4; 12; 3; 10; 1; 11; 2; 12; 5; 7; 5; 11; 6; 8; 1; 12; 4; 10; 5; 9;
+ 2; 11; 3; 12; 6; 9; 5; 10; 2; 11; 1; 12; 4; 7; 6; 7; 3; 8; 5; 9; 6; 10; 1; 11;
+ 2; 12; 3; 8; 4; 9; 1; 10; 2; 11; 3; 12; 1]
+    game |> hasSeedCount (1, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0)
+    score game |> should equal (22, 22)
+    gameState game |> should equal "South's turn"
+
+[<Test>]
+let ``Can't capture pieces if that would remove all pieces from opponent's board.`` () =
+    let game = playGame [6; 8; 5; 9; 4; 12; 3; 10; 1; 11; 2; 12; 5; 7; 5; 11; 6; 8; 1; 12; 4; 10; 5; 9;
+ 2; 11; 3; 12; 6; 9; 5; 10; 2; 11; 1; 12; 4; 7; 6; 7; 3; 8; 5; 9; 6; 10; 1; 11;
+ 2; 12; 3; 8; 4; 9; 1; 10; 2; 11; 5; 12; 6; 8; 3; 9; 4; 10; 5; 11; 1; 12; 6]
+    game |> hasSeedCount (1, 1, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0)
+    score game |> should equal (22, 22)
+    gameState game |> should equal "North's turn"
+
+[<Test>]
+let ``A draw exists when each side has 24 pieces`` () =
+    let game = playGame [6; 8; 5; 9; 4; 12; 3; 10; 1; 11; 2; 12; 5; 7; 5; 11; 6; 8; 1; 12; 4; 10; 5; 9;
+ 2; 11; 3; 12; 6; 9; 5; 10; 2; 11; 1; 12; 4; 7; 6; 7; 3; 8; 5; 9; 6; 10; 1; 11;
+ 2; 12; 3; 8; 4; 9; 1; 10; 6; 7; 2; 8; 3; 9; 4; 10; 5; 11; 6; 12]
+    game |> hasSeedCount (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)
+    score game |> should equal (24, 24)
+    gameState game |> should equal "Game ended in a draw"
